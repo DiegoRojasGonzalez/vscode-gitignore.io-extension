@@ -9,7 +9,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": ["onCommand:extension.generateGitignore"],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -17,7 +17,15 @@
         "command": "gitignore-io-extension.generate-file",
         "title": "Generate .gitignore"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "gitignore-io-extension.generate-file",
+          "group": "EditorConfig@1"
+        }
+      ]
+    }
     
   },
   "scripts": {
