@@ -14,10 +14,11 @@
   "contributes": {
     "commands": [
       {
-        "command": "gitignore-io-extension.generatefile",
+        "command": "gitignore-io-extension.generate-file",
         "title": "Generate .gitignore"
       }
     ]
+    
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
