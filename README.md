@@ -1,0 +1,1 @@
+# vscode-gitignore.io-extension
