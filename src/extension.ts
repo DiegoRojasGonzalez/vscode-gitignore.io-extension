@@ -24,7 +24,7 @@ export function activate(context: ExtensionContext) {
                     throw new Error(`Error: ${response.statusText}`);
                 }
 
-                // Assume response.data is a CSV string
+                // Assume response.data is a CSV string //TODO : create helper for this
                 const csvData: string = response.data;
                 const names = csvData.split(",");
                 const options: Option[] = names.map((name) => ({
