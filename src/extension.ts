@@ -1,5 +1,7 @@
-import { window, commands, ExtensionContext } from "vscode";
+import { window, commands, ExtensionContext, workspace, Uri } from "vscode";
 import axios from "axios";
+import * as fs from "fs";
+import * as path from "path";
 
 export function activate(context: ExtensionContext) {
     console.log(
@@ -8,8 +10,9 @@ export function activate(context: ExtensionContext) {
 
     const disposable = commands.registerCommand(
         "gitignore-io-extension.generate-file",
-        async () => {
+        async (uri: Uri) => {
             //Interface ( //TODO : Refactoring needed on other folder) - Interfaces folder
+
             interface Option {
                 label: string;
             }
@@ -67,14 +70,46 @@ export function activate(context: ExtensionContext) {
                         (option) => option.label
                     );
 
+                    window.showInformationMessage(
+                        `Selected: ${selectedLabels.join(", ")}`
+                    );
+
                     //! API CALL FOR GITIGNORE
                     const gitignoreContent = await fetchGitignore(
                         selectedLabels
                     );
 
-                    window.showInformationMessage(gitignoreContent);
+                    // Obtén la ruta actual del espacio de trabajo o la carpeta seleccionada
+                    let folderPath: string;
+                    if (uri && uri.fsPath) {
+                        folderPath = uri.fsPath;
+                    } else {
+                        const workspaceFolders = workspace.workspaceFolders;
+                        if (!workspaceFolders) {
+                            window.showErrorMessage(
+                                "No workspace folder is open"
+                            );
+                            return;
+                        }
+                        folderPath = workspaceFolders[0].uri.fsPath;
+                    }
+                    const fileName = ".gitignore";
+                    const filePath = path.join(folderPath, fileName);
 
-                    console.log(gitignoreContent);
+                    // Crea el archivo en la ruta seleccionada
+                    fs.writeFile(filePath, gitignoreContent, (err) => {
+                        if (err) {
+                            window.showInformationMessage(
+                                "Error creating file: " + err
+                            );
+                        } else {
+                            window.showInformationMessage(
+                                fileName +
+                                    " created successfully at " +
+                                    filePath
+                            );
+                        }
+                    });
                 } else {
                     window.showInformationMessage("No options selected");
                 }
@@ -88,9 +123,3 @@ export function activate(context: ExtensionContext) {
 }
 
 export function deactivate() {}
-
-// // TODO : Obtain list of stack on extension
-// // TODO : Post stack list on api
-// // TODO : get gitignore data
-//TODO : create files with fs
-//TODO : create a unit test for mvp extension
