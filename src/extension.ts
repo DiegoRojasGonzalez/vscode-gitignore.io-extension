@@ -55,6 +55,13 @@ export function activate(context: ExtensionContext) {
 
             // UI load ( //TODO : Refactoring needed on other folder) UI / components / features folder
             try {
+                if (fs.existsSync(".gitignore")) {
+                    window.showErrorMessage(
+                        "An .gitignore file already exists in this workspace"
+                    );
+                    return;
+                }
+
                 //! API CALL FOR OPTIONS
                 const options = await fetchOptions();
 
