@@ -11,61 +11,92 @@ export function activate(context: ExtensionContext) {
     const disposable = commands.registerCommand(
         "gitignore-io-extension.generate-file",
         async (uri: Uri) => {
-            //Interface ( //TODO : Refactoring needed on other folder) - Interfaces folder
-
-            interface Option {
-                label: string;
-            }
-
-            // Helper or Https module //TODO : Refactoring needed on other folder - helpers and https
-            async function fetchOptions(): Promise<Option[]> {
-                const response = await axios.get(
-                    `https://www.toptal.com/developers/gitignore/api/list`
-                );
-
-                if (response.status !== 200) {
-                    throw new Error(`Error: ${response.statusText}`);
-                }
-
-                // Assume response.data is a CSV string //TODO : create helper for this
-                const csvData: string = response.data;
-                const names = csvData.split(",");
-                const options: Option[] = names.map((name) => ({
-                    label: name.trim(),
-                }));
-                return options;
-            }
-
-            // FETCH GITIGNORE DATA ( //TODO : Refactoring needed on other folder)
-            async function fetchGitignore(
-                selectedLabels: string[]
-            ): Promise<string> {
-                const response = await axios.get(
-                    `https://www.toptal.com/developers/gitignore/api/${selectedLabels.join(
-                        ","
-                    )}`
-                );
-
-                if (response.status !== 200) {
-                    throw new Error(`Error: ${response.statusText}`);
-                }
-
-                return response.data;
-            }
-
-            // UI load ( //TODO : Refactoring needed on other folder) UI / components / features folder
             try {
-                if (fs.existsSync(".gitignore")) {
+                let folderPath: string;
+
+                // Verify if uri points to a file
+                if (uri && fs.statSync(uri.fsPath).isFile()) {
+                    folderPath = path.dirname(uri.fsPath);
+                } else {
+                    // Obtain current workspace path or selected folder path
+                    if (uri && uri.fsPath) {
+                        folderPath = uri.fsPath;
+                    } else {
+                        const workspaceFolders = workspace.workspaceFolders;
+                        if (!workspaceFolders) {
+                            window.showErrorMessage(
+                                "No workspace folder is open"
+                            );
+                            return;
+                        }
+                        folderPath = workspaceFolders[0].uri.fsPath;
+                    }
+                }
+
+                if (uri && uri.fsPath) {
+                    folderPath = uri.fsPath;
+                } else {
+                    const workspaceFolders = workspace.workspaceFolders;
+                    if (!workspaceFolders) {
+                        window.showErrorMessage("No workspace folder is open");
+                        return;
+                    }
+                    folderPath = workspaceFolders[0].uri.fsPath;
+                }
+                const fileName = ".gitignore";
+                const filePath = path.join(folderPath, fileName);
+
+                // Check if .gitignore already exists
+                if (fs.existsSync(filePath)) {
                     window.showErrorMessage(
                         "An .gitignore file already exists in this workspace"
                     );
                     return;
                 }
 
-                //! API CALL FOR OPTIONS
-                const options = await fetchOptions();
+                // Interface ( //TODO : Refactoring needed on other folder) - Interfaces folder
+                interface Option {
+                    label: string;
+                }
+
+                // Helper or Https module //TODO : Refactoring needed on other folder - helpers and https
+                async function fetchOptions(): Promise<Option[]> {
+                    const response = await axios.get(
+                        `https://www.toptal.com/developers/gitignore/api/list`
+                    );
+
+                    if (response.status !== 200) {
+                        throw new Error(`Error: ${response.statusText}`);
+                    }
+
+                    // Assume response.data is a CSV string //TODO : create helper for this
+                    const csvData: string = response.data;
+                    const names = csvData.split(",");
+                    const options: Option[] = names.map((name) => ({
+                        label: name.trim(),
+                    }));
+                    return options;
+                }
+
+                // FETCH GITIGNORE DATA ( //TODO : Refactoring needed on other folder)
+                async function fetchGitignore(
+                    selectedLabels: string[]
+                ): Promise<string> {
+                    const response = await axios.get(
+                        `https://www.toptal.com/developers/gitignore/api/${selectedLabels.join(
+                            ","
+                        )}`
+                    );
+
+                    if (response.status !== 200) {
+                        throw new Error(`Error: ${response.statusText}`);
+                    }
+
+                    return response.data;
+                }
 
                 //? UI SELECTION
+                const options = await fetchOptions();
                 const selectedOptions = await window.showQuickPick(options, {
                     canPickMany: true,
                     placeHolder:
@@ -86,24 +117,7 @@ export function activate(context: ExtensionContext) {
                         selectedLabels
                     );
 
-                    // Obtén la ruta actual del espacio de trabajo o la carpeta seleccionada
-                    let folderPath: string;
-                    if (uri && uri.fsPath) {
-                        folderPath = uri.fsPath;
-                    } else {
-                        const workspaceFolders = workspace.workspaceFolders;
-                        if (!workspaceFolders) {
-                            window.showErrorMessage(
-                                "No workspace folder is open"
-                            );
-                            return;
-                        }
-                        folderPath = workspaceFolders[0].uri.fsPath;
-                    }
-                    const fileName = ".gitignore";
-                    const filePath = path.join(folderPath, fileName);
-
-                    // Crea el archivo en la ruta seleccionada
+                    // Create the file at the selected path
                     fs.writeFile(filePath, gitignoreContent, (err) => {
                         if (err) {
                             window.showInformationMessage(
